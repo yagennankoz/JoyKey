@@ -3,8 +3,12 @@
     "arduino": {
       "earlephilhower": {
         "boot2_source": "boot2_w25q080_2_padded_checksum.S",
-        "usb_vid": "0x33DD",
-        "usb_pid": "0x0013"
+        "usb_vid": "0x2E8A",
+        "usb_pid": "0x003",
+        "$comment": {
+          "usb_vid": "0x33DD",
+          "usb_pid": "0x0013"
+        }
       }
     },
     "core": "earlephilhower",
@@ -13,9 +17,13 @@
     "f_cpu": "133000000L",
     "hwids": [
       [
-        "0x33DD",
-        "0x0013"
+        "0x2E8A",
+        "0x0003"
       ]
+    ],
+    "$comment": [
+      "0x33DD",
+      "0x0013"
     ],
     "mcu": "rp2040",
     "variant": "rpipicow"
