@@ -6,6 +6,10 @@
         "usb_vid": "0x2E8A",
         "usb_pid": "0x003",
         "$comment": {
+          "pico": null,
+          "usb_vid": "0x2E8A",
+          "usb_pid": "0x003",
+          "Z": null,
           "usb_vid": "0x33DD",
           "usb_pid": "0x0013"
         }
@@ -22,6 +26,10 @@
       ]
     ],
     "$comment": [
+      "pico",
+      "0x2E8A",
+      "0x0003",
+      "Z",
       "0x33DD",
       "0x0013"
     ],
