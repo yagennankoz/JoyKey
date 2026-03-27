@@ -11,21 +11,22 @@
 
 #include "define.hpp"
 #include "keyAssign.hpp"
+#include "keyMap.hpp"
+#include "icon.hpp"
+#include "keyIcon.hpp"
 
-
-Adafruit_SSD1306    oled(128, 64, &Wire, -1);
-uint8_t const desc_hid_report[] =
-{
-    MY_TUD_HID_REPORT_DESC_GAMEPAD()
-};
-Adafruit_USBD_HID usb_hid(desc_hid_report, sizeof(desc_hid_report), HID_ITF_PROTOCOL_NONE, 2, false);
-my_hid_gamepad_report_t     pad_report;
-
-const DrawKeyPos drawKeyPos[] = {
-    {52, 54}, {40, 36}, {28, 30}, {16, 34}, {4, 35}, {28, 42},
-    {68, 54}, {80, 36}, {92, 30}, {104, 34}, {116, 35}, {92, 42},
-    {52, 24}, {68, 24}
-};
+Adafruit_SSD1306 oled(128, 64, &Wire, -1);
+uint8_t const desc_hid_report_composite[] = {
+    JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD(HID_REPORT_ID(RID_JOYPAD)),
+    TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(RID_KEYBOARD))};
+uint8_t const desc_hid_report_joypad[] = {
+    JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD(HID_REPORT_ID(RID_JOYPAD))};
+uint8_t const desc_hid_report_key[] = {
+    TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(RID_KEYBOARD))};
+Adafruit_USBD_HID usb_hid_pad;
+Adafruit_USBD_HID usb_hid_key;
+Joykey_hid_gamepad_report_t pad_report;
+my_hid_keyboard_report_t key_report;
 
 uint8_t mode = 0;
 
@@ -41,7 +42,7 @@ unsigned long blastTime;
 
 uint8_t keyCode[6] = {0};
 
-bool stsOutputs[INPUT_MAX] = {false};
+bool stsPadOut[OUT_PAD_MAX] = {false};
 bool stsSel;
 bool stsStart;
 bool stsMode;
@@ -49,7 +50,7 @@ bool stsRapid;
 bool stsSpeed;
 bool stsKeys[sizeof(keys)] = {0};
 
-bool lastOutputs[INPUT_MAX] = {false};
+bool lastPadOut[OUT_PAD_MAX] = {false};
 bool lastSel;
 bool lastStart;
 bool lastMode;
@@ -61,278 +62,482 @@ bool cancel = false;
 bool blastWait = false;
 bool blast = false;
 
+uint8_t stsKeyModifier = MODIFIER_NONE;
+bool stsKeyOut[HID_KEY_GUI_RIGHT + 1] = {false};
+bool lastKeyOut[HID_KEY_GUI_RIGHT + 1] = {false};
+uint8_t keyUsage[6] = {HID_KEY_NONE};
+uint8_t lastKeyUsage[6] = {HID_KEY_NONE};
+Joykey_hid_gamepad_report_t lastSentPadReport = {};
+uint8_t lastSentKeyModifier = MODIFIER_NONE;
+uint8_t lastSentKeyUsage[6] = {HID_KEY_NONE};
+bool keyOn = false;
+uint16_t stsKeyPos = 0;
+uint16_t iconColor = SSD1306_WHITE;
+
 void save_setting()
 {
-    uint8_t write_data[FLASH_PAGE_SIZE];
-    CONFIG_DATA *config = (CONFIG_DATA *)&write_data[sizeof(SIGNATURE)];
+  uint8_t write_data[FLASH_PAGE_SIZE];
+  ConfigData *config = (ConfigData *)&write_data[sizeof(SIGNATURE)];
 
-    memcpy(write_data, SIGNATURE, sizeof(SIGNATURE));
-    config->mode = mode;
-    config->rapidIdx = rapidIdx;
-    for (int i = 0; i < sizeof(keys); i++) {
-        config->rapidKeys[i] = rapidKeys[i];
-    }
+  memcpy(write_data, SIGNATURE, sizeof(SIGNATURE));
+  config->mode = mode;
+  config->rapidIdx = rapidIdx;
+  for (int i = 0; i < sizeof(keys); i++)
+  {
+    config->rapidKeys[i] = rapidKeys[i];
+  }
 
-    noInterrupts();
-    flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE);
-    flash_range_program(FLASH_TARGET_OFFSET, write_data, FLASH_PAGE_SIZE);
-    interrupts();
+  noInterrupts();
+  flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE);
+  flash_range_program(FLASH_TARGET_OFFSET, write_data, FLASH_PAGE_SIZE);
+  interrupts();
 }
 
 void load_setting()
 {
-    const uint8_t *saved_data = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
-    CONFIG_DATA *config = (CONFIG_DATA *)&saved_data[sizeof(SIGNATURE)];
+  const uint8_t *saved_data = (const uint8_t *)(XIP_BASE + FLASH_TARGET_OFFSET);
+  ConfigData *config = (ConfigData *)&saved_data[sizeof(SIGNATURE)];
 
-    if (0 != memcmp(saved_data, SIGNATURE, sizeof(SIGNATURE))) {
-        mode = 0;
-        rapidIdx = 0;
-    } else {
-        mode = config->mode;
-        rapidIdx = config->rapidIdx;
-        for (int i = 0; i < sizeof(keys); i++) {
-            rapidKeys[i] = config->rapidKeys[i];
-        }
+  if (0 != memcmp(saved_data, SIGNATURE, sizeof(SIGNATURE)))
+  {
+    mode = 0;
+    rapidIdx = 0;
+  }
+  else
+  {
+    mode = config->mode;
+    rapidIdx = config->rapidIdx;
+    for (int i = 0; i < sizeof(keys); i++)
+    {
+      rapidKeys[i] = config->rapidKeys[i];
     }
+  }
 }
 
-void drawDisplay() {
-    oled.clearDisplay();
-    oled.setTextSize(1);
-    for (uint8_t i = 0; i < 14; i++) {
-        if (rapidKeys[i]) {
-            oled.fillRoundRect(drawKeyPos[i].x - 3, drawKeyPos[i].y - 3, 12, 12, 3, SSD1306_WHITE);
-            oled.setTextColor(SSD1306_BLACK);
-        } else {
-            oled.drawRoundRect(drawKeyPos[i].x - 3, drawKeyPos[i].y - 3, 12, 12, 3, SSD1306_WHITE);
-            oled.setTextColor(SSD1306_WHITE);
+void drawDisplay()
+{
+  oled.clearDisplay();
+  oled.setTextSize(1);
+  for (uint8_t i = 0; i < KEY_ASSIGN_NUM; i++)
+  {
+    if (keyAssign[mode].key[i].code[0] == K_NOP)
+    {
+      oled.drawRect(drawKeyPos[i].x - 3, drawKeyPos[i].y - 3, 12, 12, SSD1306_WHITE);
+      oled.drawLine(drawKeyPos[i].x - 3, drawKeyPos[i].y - 3, drawKeyPos[i].x + 7, drawKeyPos[i].y + 7, SSD1306_WHITE);
+      oled.drawLine(drawKeyPos[i].x + 7, drawKeyPos[i].y - 3, drawKeyPos[i].x - 3, drawKeyPos[i].y + 7, SSD1306_WHITE);
+    }
+    else
+    {
+      if (rapidKeys[i])
+      {
+        if (keyDefTbl[keyAssign[mode].key[i].code[0]].device == DVC_PAD)
+        {
+          oled.fillRoundRect(drawKeyPos[i].x - 3, drawKeyPos[i].y - 3, 12, 12, 3, SSD1306_WHITE);
         }
+        else
+        {
+          oled.fillRect(drawKeyPos[i].x - 3, drawKeyPos[i].y - 3, 12, 12, SSD1306_WHITE);
+        }
+        iconColor = SSD1306_BLACK;
+      }
+      else
+      {
+        if (keyDefTbl[keyAssign[mode].key[i].code[0]].device == DVC_PAD)
+        {
+          oled.drawRoundRect(drawKeyPos[i].x - 3, drawKeyPos[i].y - 3, 12, 12, 3, SSD1306_WHITE);
+        }
+        else
+        {
+          oled.drawRect(drawKeyPos[i].x - 3, drawKeyPos[i].y - 3, 12, 12, SSD1306_WHITE);
+        }
+        iconColor = SSD1306_WHITE;
+      }
+      if (keyAssign[mode].key[i].keyIcon == KEY_ICON_NONE)
+      {
+        oled.setTextColor(iconColor);
         oled.setCursor(drawKeyPos[i].x, drawKeyPos[i].y);
-        oled.printf("%c", keyChar[keyAssign[mode][i]]);
-        oled.setCursor(drawKeyPos[i].x+1, drawKeyPos[i].y);
-        oled.printf("%c", keyChar[keyAssign[mode][i]]);
+        oled.printf("%c", keyDefTbl[keyAssign[mode].key[i].code[0]].disp);
+        oled.setCursor(drawKeyPos[i].x + 1, drawKeyPos[i].y);
+        oled.printf("%c", keyDefTbl[keyAssign[mode].key[i].code[0]].disp);
+      }
+      else
+      {
+        oled.drawBitmap(drawKeyPos[i].x - 1, drawKeyPos[i].y - 1, keyIconDef[keyAssign[mode].key[i].keyIcon - 1], 8, 8, iconColor);
+      }
     }
-    oled.setTextColor(SSD1306_WHITE);
-    oled.setCursor(4,7);
-    oled.printf("MODE");
-    oled.setCursor(106,7);
-    oled.printf("sps");
-    oled.setTextSize(2);
-    oled.setCursor(30,0);
-    oled.printf("%d", mode + 1);
-    oled.setCursor(82,00);
-    oled.printf("%02d", (1000 / (interval[rapidIdx] * 2)));
-    oled.drawLine(0,16,128,16,SSD1306_WHITE);
-    oled.drawLine(0,18,128,18,SSD1306_WHITE);
+  }
+  oled.setTextColor(SSD1306_WHITE);
+  oled.setCursor(4, 7);
+  oled.printf("MODE");
+  oled.setCursor(106, 7);
+  oled.printf("sps");
+  oled.setTextSize(2);
+  oled.setCursor(30, 0);
+  oled.printf("%d", mode + 1);
+  oled.setCursor(82, 00);
+  oled.printf("%02d", (1000 / (interval[rapidIdx] * 2)));
+  oled.drawLine(0, 16, 128, 16, SSD1306_WHITE);
+  oled.drawLine(0, 18, 128, 18, SSD1306_WHITE);
 
-    if (keyAssign[mode][sizeof(keys)] == INPUT_MODE_Z) {
-        oled.drawBitmap(55, 1, bitmap_z, 16, 12,  SSD1306_WHITE);
-    }
-    oled.display();
+  switch (keyAssign[mode].icon)
+  {
+  case INPUT_MODE_Z:
+    oled.drawBitmap(55, 1, icon_z, 16, 12, SSD1306_WHITE);
+    break;
+  case INPUT_MODE_ROGUE:
+    oled.drawBitmap(55, 0, icon_rogue, 16, 14, SSD1306_WHITE);
+    break;
+  case INPUT_MODE_GRADIUS:
+    oled.drawBitmap(55, 0, icon_gradius, 16, 14, SSD1306_WHITE);
+    break;
+  case INPUT_MODE_LAGOON:
+    oled.drawBitmap(55, 0, icon_lagoon, 16, 14, SSD1306_WHITE);
+    break;
+  case INPUT_MODE_NEMESIS:
+    oled.drawBitmap(55, 0, icon_nemesis, 16, 14, SSD1306_WHITE);
+    break;
+  }
+  oled.display();
 }
 
-bool isKeyEnabled() {
-    unsigned long now = micros();
-    if (ULONG_MAX - keyReleaseTime <= KEY_RELEASE_WAIT) {
-        if ((KEY_RELEASE_WAIT + (ULONG_MAX - keyReleaseTime)) < now) {
-            return true;
-        }
-    } else if (keyReleaseTime + KEY_RELEASE_WAIT < now) {
-        return true;
+bool isKeyEnabled()
+{
+  unsigned long now = micros();
+  if (ULONG_MAX - keyReleaseTime <= KEY_RELEASE_WAIT)
+  {
+    if ((KEY_RELEASE_WAIT + (ULONG_MAX - keyReleaseTime)) < now)
+    {
+      return true;
     }
-    return false;
+  }
+  else if (keyReleaseTime + KEY_RELEASE_WAIT < now)
+  {
+    return true;
+  }
+  return false;
 }
 
-void setup() {
-    pinMode(LED_BUILTIN,    OUTPUT);
+void setup()
+{
+  load_setting();
 
-    for (uint8_t i = 0; i < sizeof(keys); i++) {
-        pinMode(keys[i], INPUT_PULLUP);
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  for (uint8_t i = 0; i < sizeof(keys); i++)
+  {
+    pinMode(keys[i], INPUT_PULLUP);
+  }
+
+  pinMode(PIN_SEL, INPUT_PULLUP);
+  pinMode(PIN_START, INPUT_PULLUP);
+  pinMode(PIN_MODE, INPUT_PULLUP);
+  pinMode(PIN_RAPID, INPUT_PULLUP);
+  pinMode(PIN_SPEED, INPUT_PULLUP);
+
+  Wire.available();
+  Wire.setSDA(PIN_SDA);
+  Wire.setSCL(PIN_SCL);
+  Wire.begin();
+
+  oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  oled.setTextColor(SSD1306_WHITE);
+  oled.clearDisplay();
+  oled.setTextSize(2);
+  oled.setCursor(0, 0);
+  oled.printf("STARTUP");
+  oled.display();
+
+  usb_hid_pad.setPollInterval(1);
+  usb_hid_key.setPollInterval(1);
+
+  TinyUSB_Device_Init(0);
+
+  switch (keyAssign[mode].device)
+  {
+  case USB_DVC_PAD:
+    usb_hid_pad.setReportDescriptor(desc_hid_report_joypad, sizeof(desc_hid_report_joypad));
+    usb_hid_pad.begin();
+    break;
+  case USB_DVC_KEY:
+    usb_hid_key.setBootProtocol(HID_ITF_PROTOCOL_KEYBOARD);
+    usb_hid_key.setReportDescriptor(desc_hid_report_key, sizeof(desc_hid_report_key));
+    usb_hid_key.begin();
+    break;
+  default:
+    usb_hid_pad.setReportDescriptor(desc_hid_report_joypad, sizeof(desc_hid_report_joypad));
+    usb_hid_key.setBootProtocol(HID_ITF_PROTOCOL_KEYBOARD);
+    usb_hid_key.setReportDescriptor(desc_hid_report_key, sizeof(desc_hid_report_key));
+    usb_hid_pad.begin();
+    usb_hid_key.begin();
+  }
+
+  if (TinyUSBDevice.mounted())
+  {
+    TinyUSBDevice.detach();
+    delay(10);
+    TinyUSBDevice.attach();
+  }
+
+  lastSel = false;
+  lastStart = false;
+  lastMode = false;
+  lastRapid = false;
+  lastSpeed = false;
+
+  lastFireTime = micros();
+  rapidTrigger = true;
+
+  keyReleaseTime = micros();
+
+  drawDisplay();
+
+  pinMode(PIN_MIDI_3V3, OUTPUT);
+  digitalWrite(PIN_MIDI_3V3, HIGH);
+}
+
+void loop()
+{
+  // ÈÄ£Â∞ÑÂà∂Âæ°
+  fireTime = micros();
+  if (ULONG_MAX - lastFireTime <= (unsigned long)interval[rapidIdx] * 1000)
+  {
+    if ((interval[rapidIdx] * 1000 + (ULONG_MAX - lastFireTime)) < fireTime)
+    {
+      rapidTrigger = !rapidTrigger;
+      lastFireTime = fireTime;
     }
+  }
+  else if (lastFireTime + (unsigned long)interval[rapidIdx] * 1000 < fireTime)
+  {
+    rapidTrigger = !rapidTrigger;
+    lastFireTime = fireTime;
+  }
 
-    pinMode(PIN_SEL, INPUT_PULLUP);
-    pinMode(PIN_START, INPUT_PULLUP);
-    pinMode(PIN_MODE, INPUT_PULLUP);
-    pinMode(PIN_RAPID, INPUT_PULLUP);
-    pinMode(PIN_SPEED, INPUT_PULLUP);
+  // „Ç≠„ÉºË™≠„ÅøÂá∫„Åó
+  for (uint8_t i = 0; i < sizeof(keys); i++)
+  {
+    lastKeys[i] = stsKeys[i];
+    stsKeys[i] = !digitalRead(keys[i]);
+  }
 
-    Wire.available();
-    Wire.setSDA(PIN_SDA);
-    Wire.setSCL(PIN_SCL);
-    Wire.begin(); 
-
-    oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-    oled.setTextColor(SSD1306_WHITE);
-    oled.clearDisplay();
-    oled.setTextSize(2);
-    oled.setCursor(0,0);
-    oled.printf("STARTUP");
-    oled.display();
-
-    TinyUSB_Device_Init(0);
-    usb_hid.begin();
-
-    lastSel = false;
-    lastStart = false;
-    lastMode = false;
-    lastRapid = false;
-    lastSpeed = false;
-
-    lastFireTime = micros();
-    rapidTrigger = true;
-
-    keyReleaseTime = micros();
-
-    load_setting();
-
+  stsRapid = !digitalRead(PIN_RAPID);
+  // ÈÄ£Â∞Ñ„Ç≠„ÉºË®≠ÂÆöÔºà„Éà„Ç∞„É´Ôºâ
+  if (stsRapid && isKeyEnabled())
+  {
+    for (uint8_t i = 0; i < sizeof(keys); i++)
+    {
+      if (stsKeys[i] && !lastKeys[i])
+      {
+        rapidKeys[i] = !rapidKeys[i];
+      }
+    }
+    lastRapid = stsRapid;
+    save_setting();
     drawDisplay();
+    return;
+  }
 
-    pinMode(PIN_MIDI_3V3, OUTPUT);
-    digitalWrite(PIN_MIDI_3V3, HIGH);
-}
-
-void loop() {
-    // òAéÀêßå‰
-    fireTime = micros();
-    if (ULONG_MAX - lastFireTime <= (unsigned long)interval[rapidIdx] * 1000) {
-        if ((interval[rapidIdx] * 1000 + (ULONG_MAX - lastFireTime)) < fireTime) {
-            rapidTrigger = !rapidTrigger;
-            lastFireTime = fireTime;
-        }
-    } else if (lastFireTime + (unsigned long)interval[rapidIdx] * 1000 < fireTime) {
-        rapidTrigger = !rapidTrigger;
-        lastFireTime = fireTime;
-    }
-
-    // ÉLÅ[ì«Ç›èoÇµ
-    for (uint8_t i = 0; i < sizeof(keys); i++) {
-        lastKeys[i] = stsKeys[i];
-        stsKeys[i] = !digitalRead(keys[i]);
-    }
-
-    stsRapid = !digitalRead(PIN_RAPID);
-    // òAéÀÉLÅ[ê›íËÅiÉgÉOÉãÅj
-    if (stsRapid && isKeyEnabled()) {
-        for (uint8_t i = 0; i < sizeof(keys); i++) {
-            if(stsKeys[i] && !lastKeys[i]) {
-                rapidKeys[i] = !rapidKeys[i];
-            }
-        }
-        lastRapid = stsRapid;
-        save_setting();
-        drawDisplay();
-        return;
-    }
-
-    // ÉÇÅ[ÉhïœçX
-    stsMode = !digitalRead(PIN_MODE);
-    if (stsMode && !lastMode && isKeyEnabled()) {
-        mode++;
-        if (mode >= sizeof(keyAssign) / KEY_ASSIGN_NUM) {
-            mode = 0;
-        }
-        lastMode = stsMode;
-        save_setting();
-        drawDisplay();
-        return;
-    }
-
-    // òAéÀë¨ìxê›íË
-    stsSpeed = !digitalRead(PIN_SPEED);
-    if (stsSpeed & !lastSpeed && isKeyEnabled()) {
-        rapidIdx++;
-        if (rapidIdx >= sizeof(interval)) {
-            rapidIdx = 0;
-        }
-        save_setting();
-        drawDisplay();
-    }
-
-    memset(stsOutputs, 0, INPUT_MAX);
-    bool fire = false;
-    for (uint8_t i = 0; i < sizeof(keys); i++) {
-        stsOutputs[keyAssign[mode][i]] |= (stsKeys[i] & (rapidKeys[i] ? rapidTrigger : true));
-        fire |= (stsKeys[i] & rapidKeys[i] & rapidTrigger);
-    }
-    // ÉLÉÉÉìÉZÉãîªíË
-    if (stsOutputs[INPUT_CANCEL] && !lastOutputs[INPUT_CANCEL]) {
-        cancel = true;
-        cancelTime = micros();
-    }
-    // ÉuÉâÉXÉ^Å[îªíË
-    if (stsOutputs[INPUT_BLAST] && !lastOutputs[INPUT_BLAST] && !blast) {
-        blastWait = true;
-        blastWaitTime = micros();
-    }
-    // ÉLÉÉÉìÉZÉãé¿çs
-    if (cancel && (cancelTime + KEY_CANCEL_WAIT > micros())) {
-        stsOutputs[INPUT_TRG_A] = false;
-        stsOutputs[INPUT_TRG_B] = false;
-        stsOutputs[INPUT_TRG_C] = false;
-        fire = false;
-    } else {
-        cancel = false;
-    }
-    // ÉuÉâÉXÉ^Å[ëOÉLÉÉÉìÉZÉã
-    if (blastWait) {
-        if (blastWaitTime + KEY_CANCEL_WAIT > micros()) {
-            stsOutputs[INPUT_LEFT] = false;
-            stsOutputs[INPUT_RIGHT] = false;
-            stsOutputs[INPUT_UP] = false;
-            stsOutputs[INPUT_DOWN] = false;
-            stsOutputs[INPUT_TRG_A] = false;
-            stsOutputs[INPUT_TRG_B] = false;
-            fire = false;
-        } else {
-            blast = true;
-            blastTime = micros();
-            blastWait = false;
-        }
-    }
-    // ÉuÉâÉXÉ^Å[
-    if (blast) {
-        if (blastTime + KEY_TRIGGER_WAIT > micros()) {
-            stsOutputs[INPUT_TRG_A] = true;
-            stsOutputs[INPUT_TRG_B] = true;
-        } else {
-            blast = false;
-        }
-    }
-    if (fire) {
-        digitalWrite(LED_BUILTIN, HIGH);
-    } else {
-        digitalWrite(LED_BUILTIN, LOW);
-    }
-
-    memset(&pad_report, 0, sizeof(pad_report));
-    pad_report.x = (stsOutputs[INPUT_LEFT] ? 0 : 127) + (stsOutputs[INPUT_RIGHT] ? 127 : 0);
-    pad_report.y = (stsOutputs[INPUT_UP] ? 0 : 127) + (stsOutputs[INPUT_DOWN] ? 127 : 0);
-    pad_report.buttons[0] = stsOutputs[INPUT_TRG_C]
-                        | stsOutputs[INPUT_TRG_B] << 1
-                        | stsOutputs[INPUT_TRG_A] << 2
-                        | stsOutputs[INPUT_03] << 3
-                        | stsOutputs[INPUT_L1] << 4
-                        | stsOutputs[INPUT_R1] << 5
-                        | stsOutputs[INPUT_06] << 6
-                        | stsOutputs[INPUT_07] << 7;
-    pad_report.buttons[1] = stsOutputs[INPUT_SELECT]
-                        | stsOutputs[INPUT_START] << 1
-                        | stsOutputs[INPUT_10] << 2
-                        | stsOutputs[INPUT_11] << 3;
-
-    if (TinyUSBDevice.mounted() &&usb_hid.ready()) {
-        usb_hid.sendReport(0, &pad_report, sizeof(pad_report));
-    }
-
-    if ((lastMode && !stsMode)
-     || (lastRapid && !stsRapid)
-     || (lastSpeed && !stsSpeed)
-     || (lastSel && !stsSel)
-     || (lastStart && !stsStart)) {
-        keyReleaseTime = micros();
+  // „É¢„Éº„ÉâÂ§âÊõ¥
+  stsMode = !digitalRead(PIN_MODE);
+  if (stsMode && !lastMode && isKeyEnabled())
+  {
+    uint8_t lastDevice = keyAssign[mode].device;
+    mode++;
+    if (mode >= sizeof(keyAssign) / sizeof(KeyAssign))
+    {
+      mode = 0;
     }
     lastMode = stsMode;
-    lastRapid = stsRapid;
-    lastSpeed = stsSpeed;
-    memcpy(lastOutputs, stsOutputs, sizeof(lastOutputs));
+    save_setting();
+    drawDisplay();
+    if (lastDevice != keyAssign[mode].device)
+    {
+      TinyUSBDevice.detach();
+      oled.clearDisplay();
+      oled.setTextColor(SSD1306_WHITE);
+      oled.setCursor(0, 0);
+      oled.setTextSize(1);
+      oled.printf("REBOOTING...");
+      oled.display();
+      watchdog_enable(500, 1);
+      while (1)
+        ;
+    }
+    return;
+  }
+
+  // ÈÄ£Â∞ÑÈÄüÂ∫¶Ë®≠ÂÆö
+  stsSpeed = !digitalRead(PIN_SPEED);
+  if (stsSpeed & !lastSpeed && isKeyEnabled())
+  {
+    rapidIdx++;
+    if (rapidIdx >= sizeof(interval))
+    {
+      rapidIdx = 0;
+    }
+    save_setting();
+    drawDisplay();
+  }
+
+  memset(stsPadOut, 0, OUT_PAD_MAX);
+  memset(stsKeyOut, false, sizeof(stsKeyOut));
+  stsKeyModifier = MODIFIER_NONE;
+  memset(keyUsage, HID_KEY_NONE, sizeof(keyUsage));
+
+  bool fire = false;
+  // „Ç≠„ÉºÂÖ•Âäõ„ÅÆ„Éû„Éº„Ç∏
+  for (uint8_t i = 0; i < sizeof(keys); i++)
+  {
+    for (uint8_t j = 0; j < KEY_ASSIGN_KEY_NUM; j++)
+    {
+      if (keyDefTbl[keyAssign[mode].key[i].code[j]].device == DVC_PAD)
+      {
+        // JOYPADÂÖ•Âäõ
+        stsPadOut[keyDefTbl[keyAssign[mode].key[i].code[j]].usage] |= (stsKeys[i] & (rapidKeys[i] ? rapidTrigger : true));
+      }
+      else
+      {
+        // „Ç≠„Éº„Éú„Éº„ÉâÂÖ•Âäõ
+        stsKeyOut[keyDefTbl[keyAssign[mode].key[i].code[j]].usage] |= (stsKeys[i] & (rapidKeys[i] ? rapidTrigger : true));
+        stsKeyModifier |= (stsKeys[i] & (rapidKeys[i] ? rapidTrigger : true)) ? keyDefTbl[keyAssign[mode].key[i].code[j]].modifier : MODIFIER_NONE;
+        if (stsKeyModifier)
+        {
+          digitalWrite(LED_BUILTIN, HIGH);
+        }
+      }
+    }
+    fire |= (stsKeys[i] & rapidKeys[i] & rapidTrigger);
+  }
+  keyOn = false;
+  for (uint8_t i = 0; i < sizeof(lastKeyUsage); i++)
+  {
+    if (stsKeyOut[lastKeyUsage[i]])
+    {
+      keyUsage[i] = lastKeyUsage[i];
+      keyOn = true;
+    }
+  }
+  stsKeyPos = 0;
+  for (uint8_t i = 0; i < sizeof(keyUsage); i++)
+  {
+    if (keyUsage[i] == HID_KEY_NONE)
+    {
+      for (uint16_t j = stsKeyPos; j < sizeof(stsKeyOut); j++)
+      {
+        stsKeyPos = j + 1;
+        if (stsKeyOut[j])
+        {
+          keyUsage[i] = j;
+          keyOn = true;
+          break;
+        }
+      }
+    }
+  }
+
+  // „Ç≠„É£„É≥„Çª„É´Âà§ÂÆö
+  if (stsPadOut[OUT_PAD_CANCEL] && !lastPadOut[OUT_PAD_CANCEL])
+  {
+    cancel = true;
+    cancelTime = micros();
+  }
+  // „Éñ„É©„Çπ„Çø„ÉºÂà§ÂÆö
+  if (stsPadOut[OUT_PAD_BLAST] && !lastPadOut[OUT_PAD_BLAST] && !blast)
+  {
+    blastWait = true;
+    blastWaitTime = micros();
+  }
+  // „Ç≠„É£„É≥„Çª„É´ÂÆüË°å
+  if (cancel && (cancelTime + KEY_CANCEL_WAIT > micros()))
+  {
+    stsPadOut[OUT_PAD_TRG_A] = false;
+    stsPadOut[OUT_PAD_TRG_B] = false;
+    stsPadOut[OUT_PAD_TRG_C] = false;
+    fire = false;
+  }
+  else
+  {
+    cancel = false;
+  }
+  // „Éñ„É©„Çπ„Çø„ÉºÂâç„Ç≠„É£„É≥„Çª„É´
+  if (blastWait)
+  {
+    if (blastWaitTime + KEY_CANCEL_WAIT > micros())
+    {
+      stsPadOut[OUT_PAD_LEFT] = false;
+      stsPadOut[OUT_PAD_RIGHT] = false;
+      stsPadOut[OUT_PAD_UP] = false;
+      stsPadOut[OUT_PAD_DOWN] = false;
+      stsPadOut[OUT_PAD_TRG_A] = false;
+      stsPadOut[OUT_PAD_TRG_B] = false;
+      fire = false;
+    }
+    else
+    {
+      blast = true;
+      blastTime = micros();
+      blastWait = false;
+    }
+  }
+  // „Éñ„É©„Çπ„Çø„Éº
+  if (blast)
+  {
+    if (blastTime + KEY_TRIGGER_WAIT > micros())
+    {
+      stsPadOut[OUT_PAD_TRG_A] = true;
+      stsPadOut[OUT_PAD_TRG_B] = true;
+    }
+    else
+    {
+      blast = false;
+    }
+  }
+  if (fire)
+  {
+    digitalWrite(LED_BUILTIN, HIGH);
+  }
+  else
+  {
+    digitalWrite(LED_BUILTIN, LOW);
+  }
+
+  memset(&pad_report, 0, sizeof(pad_report));
+  pad_report.x = (stsPadOut[OUT_PAD_LEFT] ? 0 : 127) + (stsPadOut[OUT_PAD_RIGHT] ? 127 : 0);
+  pad_report.y = (stsPadOut[OUT_PAD_UP] ? 0 : 127) + (stsPadOut[OUT_PAD_DOWN] ? 127 : 0);
+  pad_report.buttons[0] = stsPadOut[OUT_PAD_TRG_C] | stsPadOut[OUT_PAD_TRG_B] << 1 | stsPadOut[OUT_PAD_TRG_A] << 2 | stsPadOut[OUT_PAD_04] << 3 | stsPadOut[OUT_PAD_L1] << 4 | stsPadOut[OUT_PAD_R1] << 5 | stsPadOut[OUT_PAD_07] << 6 | stsPadOut[OUT_PAD_08] << 7;
+  pad_report.buttons[1] = stsPadOut[OUT_PAD_SELECT] | stsPadOut[OUT_PAD_START] << 1 | stsPadOut[OUT_PAD_11] << 2 | stsPadOut[OUT_PAD_12] << 3;
+  key_report.modifier = 0;
+  key_report.usage[0] = HID_KEY_A;
+
+  if (TinyUSBDevice.mounted())
+  {
+    if (keyAssign[mode].device == USB_DVC_COMPOSITE || keyAssign[mode].device == USB_DVC_KEY)
+    {
+      if ((lastSentKeyModifier != stsKeyModifier || memcmp(lastSentKeyUsage, keyUsage, sizeof(keyUsage)) != 0) && usb_hid_key.ready())
+      {
+        usb_hid_key.keyboardReport(RID_KEYBOARD, stsKeyModifier, keyUsage);
+        lastSentKeyModifier = stsKeyModifier;
+        memcpy(lastSentKeyUsage, keyUsage, sizeof(lastSentKeyUsage));
+      }
+    }
+    if (keyAssign[mode].device == USB_DVC_COMPOSITE || keyAssign[mode].device == USB_DVC_PAD)
+    {
+      if (memcmp(&lastSentPadReport, &pad_report, sizeof(pad_report)) != 0 && usb_hid_pad.ready())
+      {
+        usb_hid_pad.sendReport(RID_JOYPAD, &pad_report, sizeof(pad_report));
+        memcpy(&lastSentPadReport, &pad_report, sizeof(lastSentPadReport));
+      }
+    }
+  }
+
+  if ((lastMode && !stsMode) || (lastRapid && !stsRapid) || (lastSpeed && !stsSpeed) || (lastSel && !stsSel) || (lastStart && !stsStart))
+  {
+    keyReleaseTime = micros();
+  }
+  lastMode = stsMode;
+  lastRapid = stsRapid;
+  lastSpeed = stsSpeed;
+  memcpy(lastPadOut, stsPadOut, sizeof(lastPadOut));
+  memcpy(lastKeyOut, stsKeyOut, sizeof(lastKeyOut));
+  memcpy(lastKeyUsage, keyUsage, sizeof(lastKeyUsage));
 }
