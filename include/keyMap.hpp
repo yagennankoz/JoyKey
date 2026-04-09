@@ -14,6 +14,7 @@ enum
   INPUT_MODE_GRADIUS,
   INPUT_MODE_LAGOON,
   INPUT_MODE_NEMESIS,
+  INPUT_MODE_PLAYSTATION,
 };
 
 // キー出力デバイス種別
@@ -35,25 +36,27 @@ typedef enum
 typedef enum
 {
   K_NOP = 0,
-  K_PD_UP,         // JOYPAD UP
-  K_PD_DOWN,       // JOYPAD DOWN
-  K_PD_LEFT,       // JOYPAD LEFT
-  K_PD_RIGHT,      // JOYPAD RIGHT
-  K_PD_TRG_A,      // JOYPAD TRG A
-  K_PD_TRG_B,      // JOYPAD TRG B
-  K_PD_TRG_C,      // JOYPAD TRG C
-  K_PD_04,         // JOYPAD TRG 04
-  K_PD_L1,         // JOYPAD L1
-  K_PD_R1,         // JOYPAD R1
-  K_PD_07,         // JOYPAD TRG 07
-  K_PD_08,         // JOYPAD TRG 08
-  K_PD_SELECT,     // JOYPAD SELECT
-  K_PD_START,      // JOYPAD START
-  K_PD_11,         // JOYPAD TRG 11
-  K_PD_12,         // JOYPAD TRG 12
-  K_PD_CANCEL,     // JOYPAD FUNC CANCEL
-  K_PD_BLAST,      // JOYPAD FUNC BLAST FOR GRANADA
-  K_KB_ESC,        // KB ESC
+  K_PD_UP,        // D-PAD UP
+  K_PD_DOWN,      // D-PAD DOWN
+  K_PD_LEFT,      // D-PAD LEFT
+  K_PD_RIGHT,     // D-PAD RIGHT
+  K_PD_CROSS,     // PS: CROSS
+  K_PD_CIRCLE,    // PS: CIRCLE
+  K_PD_SQUARE,    // PS: SQUARE
+  K_PD_TRIANGLE,  // PS: TRIANGLE
+  K_PD_L1,        // PS: L1
+  K_PD_R1,        // PS: R1
+  K_PD_L2,        // PS: L2
+  K_PD_R2,        // PS: R2
+  K_PD_SHARE,     // PS: SHARE
+  K_PD_OPTIONS,   // PS: OPTIONS
+  K_PD_L3,        // PS: L3
+  K_PD_R3,        // PS: R3
+  K_PD_PS,        // PS: HOME/PS
+  K_PD_CANCEL,    // Internal function: cancel
+  K_PD_BLAST,     // Internal function: blast
+
+  K_KB_ESC,       // KB ESC
   K_KB_1,          // KB 1
   K_KB_2,          // KB 2
   K_KB_3,          // KB 3
@@ -136,30 +139,62 @@ typedef enum
   K_KB_LEFT_ALT,   // KB LEFT ALT (X68k XF1)
   K_KB_MUHENKAN,   // KB 無変換 (X68k XF2)
   K_KB_SHIFT,      // KB SHIFT
-  K_MAX
+  K_MAX,
+  // Backward-compatible aliases
+  K_PD_TRG_A = K_PD_CROSS,
+  K_PD_TRG_B = K_PD_CIRCLE,
+  K_PD_TRG_C = K_PD_SQUARE,
+  K_PD_04 = K_PD_TRIANGLE,
+  K_PD_07 = K_PD_L2,
+  K_PD_08 = K_PD_R2,
+  K_PD_SELECT = K_PD_SHARE,
+  K_PD_START = K_PD_OPTIONS,
+  K_PD_11 = K_PD_L3,
+  K_PD_12 = K_PD_R3,
+
+  K_KB_BREAK = K_KB_GRAVE,
+  K_KB_XF1 = K_KB_LEFT_ALT,
+  K_KB_XF2 = K_KB_MUHENKAN,
 } InternalKeyDef;
 
-// JOYPAD出力キーコード
-#define OUT_PAD_UP (0x00)     // JOYPAD UP
-#define OUT_PAD_DOWN (0x01)   // JOYPAD DOWN
-#define OUT_PAD_LEFT (0x02)   // JOYPAD LEFT
-#define OUT_PAD_RIGHT (0x03)  // JOYPAD RIGHT
-#define OUT_PAD_TRG_A (0x04)  // JOYPAD TRG A
-#define OUT_PAD_TRG_B (0x05)  // JOYPAD TRG B
-#define OUT_PAD_TRG_C (0x06)  // JOYPAD TRG C
-#define OUT_PAD_04 (0x07)     // JOYPAD TRG 04
-#define OUT_PAD_L1 (0x08)     // JOYPAD L1
-#define OUT_PAD_R1 (0x09)     // JOYPAD R1
-#define OUT_PAD_07 (0x0A)     // JOYPAD TRG 06
-#define OUT_PAD_08 (0x0B)     // JOYPAD TRG 07
-#define OUT_PAD_SELECT (0x0C) // JOYPAD SELECT
-#define OUT_PAD_START (0x0D)  // JOYPAD START
-#define OUT_PAD_11 (0x0E)     // JOYPAD TRG 10
-#define OUT_PAD_12 (0x0F)     // JOYPAD TRG 11
-#define OUT_PAD_CANCEL (0x10) // JOYPAD FUNC CANCEL
-#define OUT_PAD_BLAST (0x11)  // JOYPAD FUNC BLAST FOR GRANADA
-#define OUT_PAD_NOP (0x12)    // JOYPAD NOP
-#define OUT_PAD_MAX (0x13)
+// PAD出力キーコード
+#define OUT_PAD_UP (0x00)    // D-PAD UP
+#define OUT_PAD_DOWN (0x01)  // D-PAD DOWN
+#define OUT_PAD_LEFT (0x02)  // D-PAD LEFT
+#define OUT_PAD_RIGHT (0x03) // D-PAD RIGHT
+
+// PSコントローラ準拠のボタン割り当て（button bits 0-15に対応）
+#define OUT_PAD_CROSS (0x04)
+#define OUT_PAD_CIRCLE (0x05)
+#define OUT_PAD_SQUARE (0x06)
+#define OUT_PAD_TRIANGLE (0x07)
+#define OUT_PAD_L1 (0x08)
+#define OUT_PAD_R1 (0x09)
+#define OUT_PAD_L2 (0x0A)
+#define OUT_PAD_R2 (0x0B)
+#define OUT_PAD_SHARE (0x0C)
+#define OUT_PAD_OPTIONS (0x0D)
+#define OUT_PAD_L3 (0x0E)
+#define OUT_PAD_R3 (0x0F)
+#define OUT_PAD_PS (0x10)
+#define OUT_PAD_FN_CANCEL (0x11)
+#define OUT_PAD_FN_BLAST (0x12)
+#define OUT_PAD_NOP (0x13)
+#define OUT_PAD_MAX (0x14)
+
+// 既存コード互換エイリアス
+#define OUT_PAD_TRG_A (OUT_PAD_CROSS)
+#define OUT_PAD_TRG_B (OUT_PAD_CIRCLE)
+#define OUT_PAD_TRG_C (OUT_PAD_SQUARE)
+#define OUT_PAD_04 (OUT_PAD_TRIANGLE)
+#define OUT_PAD_07 (OUT_PAD_L2)
+#define OUT_PAD_08 (OUT_PAD_R2)
+#define OUT_PAD_SELECT (OUT_PAD_SHARE)
+#define OUT_PAD_START (OUT_PAD_OPTIONS)
+#define OUT_PAD_11 (OUT_PAD_PS)
+#define OUT_PAD_12 (OUT_PAD_R3)
+#define OUT_PAD_CANCEL (OUT_PAD_FN_CANCEL)
+#define OUT_PAD_BLAST (OUT_PAD_FN_BLAST)
 
 // プリセット用内部キーコード→出力先定義用構造体
 typedef struct
@@ -179,19 +214,20 @@ KeyDef keyDefTbl[] = {
     /* K_PD_DOWN */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_DOWN, 'v'},                         // JOYPAD DOWN
     /* K_PD_LEFT */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_LEFT, '<'},                         // JOYPAD LEFT
     /* K_PD_RIGHT */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_RIGHT, '>'},                       // JOYPAD RIGHT
-    /* K_PD_TRG_A */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_TRG_A, 'A'},                       // JOYPAD TRG A
-    /* K_PD_TRG_B */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_TRG_B, 'B'},                       // JOYPAD TRG B
-    /* K_PD_TRG_C */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_TRG_C, 'C'},                       // JOYPAD TRG C
-    /* K_PD_04 */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_04, '4'},                             // JOYPAD TRG 4
+    /* K_PD_TRG_A */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_TRG_A, 'A'},                       // JOYPAD TRG A  PS: CROSS
+    /* K_PD_TRG_B */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_TRG_B, 'B'},                       // JOYPAD TRG B  PS: CIRCLE
+    /* K_PD_TRG_C */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_TRG_C, 'C'},                       // JOYPAD TRG C  PS: SQUARE
+    /* K_PD_04 */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_04, '4'},                             // JOYPAD TRG 4  PS: TRIANGLE
     /* K_PD_L1 */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_L1, 'L'},                             // JOYPAD L1
     /* K_PD_R1 */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_R1, 'R'},                             // JOYPAD R1
-    /* K_PD_07 */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_07, '7'},                             // JOYPAD TRG 7
-    /* K_PD_08 */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_08, '8'},                             // JOYPAD TRG 8
-    /* K_PD_SELECT */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_SELECT, '?'},                     // JOYPAD SELECT
-    /* K_PD_START */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_START, '!'},                       // JOYPAD START
+    /* K_PD_07 */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_L2, 'L'},                             // JOYPAD L2
+    /* K_PD_08 */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_R2, 'R'},                             // JOYPAD R2
+    /* K_PD_SELECT */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_SELECT, '?'},                     // JOYPAD SELECT PS: SHARE
+    /* K_PD_START */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_START, '!'},                       // JOYPAD START  PS: OPTION
+    /* K_PD_L3 */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_L3, 'L'},                             // JOYPAD L3
+    /* K_PD_R3 */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_R3, 'R'},                             // JOYPAD R3
+    /* K_PD_PS */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_PS, 'P'},                             // JOYPAD PS
     /* K_PD_CANCEL */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_CANCEL, '#'},                     // JOYPAD CANCEL
-    /* K_PD_11 */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_11, '1'},                             // JOYPAD TRG 4
-    /* K_PD_12 */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_12, '2'},                             // JOYPAD TRG 4
     /* K_PD_BLAST */ {DVC_PAD, MODIFIER_NONE, OUT_PAD_BLAST, '*'},                       // JOYPAD BLAST
     /* K_KB_ESC */ {DVC_KEY, MODIFIER_NONE, HID_KEY_ESCAPE, 'e'},                        // KB ESC
     /* K_KB_1 */ {DVC_KEY, MODIFIER_NONE, HID_KEY_1, '1'},                               // KB 1

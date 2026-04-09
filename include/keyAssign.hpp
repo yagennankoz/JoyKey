@@ -1,5 +1,6 @@
 #pragma once
 
+#include "define.hpp"
 #include "keyMap.hpp"
 #include "keyIcon.hpp"
 
@@ -15,6 +16,8 @@ typedef struct
     OneKeyDef key[KEY_ASSIGN_NUM];
     uint8_t icon;
     UsbDevice device;
+    // USB_ID_PROFILE_* that selects VID/PID at boot.
+    uint8_t usbProfile;
 } KeyAssign;
 
 /*
@@ -36,7 +39,7 @@ KeyAssign keyAssign[] = {
         K_PD_L1, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_NONE,
         K_PD_TRG_A, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_NONE,
         // R
-        K_KB_GRAVE, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_STATESAVE,
+        K_KB_BREAK, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_STATESAVE,
         K_PD_LEFT, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_LEFT,
         K_PD_UP, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_UP,
         K_PD_RIGHT, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_RIGHT,
@@ -48,7 +51,9 @@ KeyAssign keyAssign[] = {
         // ICON
         INPUT_MODE_Z,
         // DEVICE
-        USB_DVC_COMPOSITE},
+        USB_DVC_COMPOSITE,
+        // USB PROFILE
+        USB_ID_PROFILE_Z},
 
     // MODE 2 GRADIUS
     {
@@ -67,19 +72,21 @@ KeyAssign keyAssign[] = {
         K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_NONE,
         K_KB_DOWN, K_KB_TENKEY_2, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_DOWN,
         // OTHERS
-        K_KB_GRAVE, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_STATESAVE,
+        K_KB_BREAK, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_STATESAVE,
         K_KB_ESC, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_PAUSE,
         // MODE
         INPUT_MODE_GRADIUS,
         // DEVICE
-        USB_DVC_COMPOSITE},
+        USB_DVC_COMPOSITE,
+        // USB PROFILE
+        USB_ID_PROFILE_8bitDo_SN30Pro},
 
     // MODE 3 LAGOON
     {
         // L
-        K_KB_LEFT_ALT, K_KB_MUHENKAN, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_MAGIC,
-        K_KB_MUHENKAN, K_KB_TENKEY_4, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_SWORD,
-        K_KB_LEFT_ALT, K_KB_TENKEY_8, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_JUMP,
+        K_KB_XF1, K_KB_MUHENKAN, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_MAGIC,
+        K_KB_XF2, K_KB_TENKEY_4, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_SWORD,
+        K_KB_XF1, K_KB_TENKEY_8, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_JUMP,
         K_KB_I, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_NONE,
         K_KB_E, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_NONE,
         K_KB_S, K_KB_X, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_NONE,
@@ -91,12 +98,14 @@ KeyAssign keyAssign[] = {
         K_KB_ENTER, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_ENTER,
         K_KB_DOWN, K_KB_TENKEY_2, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_DOWN,
         // OTHERS
-        K_KB_GRAVE, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_STATESAVE,
+        K_KB_BREAK, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_STATESAVE,
         K_KB_ESC, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_PAUSE,
         // MODE
         INPUT_MODE_LAGOON,
         // DEVICE
-        USB_DVC_COMPOSITE},
+        USB_DVC_COMPOSITE,
+        // USB PROFILE
+        USB_ID_PROFILE_8bitDo_SN30Pro},
 
     // MODE 4 NEMESIS'90KAI
     {
@@ -115,10 +124,38 @@ KeyAssign keyAssign[] = {
         K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_NONE,
         K_PD_DOWN, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_DOWN,
         // OTHERS
-        K_KB_GRAVE, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_STATESAVE,
+        K_KB_BREAK, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_STATESAVE,
         K_KB_ESC, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_PAUSE,
         // ICON
         INPUT_MODE_NEMESIS,
         // DEVICE
-        USB_DVC_COMPOSITE},
+        USB_DVC_COMPOSITE,
+        // USB PROFILE
+        USB_ID_PROFILE_8bitDo_SN30Pro},
+
+    // MODE 5 PLAYSTATION
+    {
+        // L
+        K_PD_TRG_A, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_CROSS,
+        K_PD_TRG_B, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_CIRCLE,
+        K_PD_04, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_TRIANGLE,
+        K_PD_TRG_C, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_SQUARE,
+        K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_NONE,
+        K_PD_TRG_A, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_CROSS,
+        // R
+        K_PD_PS, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_PS,
+        K_PD_LEFT, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_LEFT,
+        K_PD_UP, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_UP,
+        K_PD_RIGHT, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_RIGHT,
+        K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_NONE,
+        K_PD_DOWN, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_DOWN,
+        // OTHERS
+        K_PD_SELECT, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_SHARE,
+        K_PD_START, K_NOP, K_NOP, K_NOP, K_NOP, K_NOP, KEY_ICON_OPTION,
+        // ICON
+        INPUT_MODE_PLAYSTATION,
+        // DEVICE
+        USB_DVC_PAD,
+        // USB PROFILE
+        USB_ID_PROFILE_HORI_FIGHTING_STICK_V3},
 };

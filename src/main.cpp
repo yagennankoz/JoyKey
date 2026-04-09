@@ -73,6 +73,29 @@ uint8_t lastSentKeyUsage[6] = {HID_KEY_NONE};
 bool keyOn = false;
 uint16_t stsKeyPos = 0;
 uint16_t iconColor = SSD1306_WHITE;
+uint16_t activeUsbVid = usbIdentityProfiles[USB_ID_PROFILE_PICO].vid;
+uint16_t activeUsbPid = usbIdentityProfiles[USB_ID_PROFILE_PICO].pid;
+const char *activeUsbManufacturer = usbIdentityProfiles[USB_ID_PROFILE_PICO].manufacturer;
+const char *activeUsbProduct = usbIdentityProfiles[USB_ID_PROFILE_PICO].product;
+
+uint8_t getUsbProfileIndexByMode(uint8_t modeIdx)
+{
+  uint8_t profile = keyAssign[modeIdx].usbProfile;
+  if (profile >= USB_ID_PROFILE_MAX)
+  {
+    return USB_ID_PROFILE_PICO;
+  }
+  return profile;
+}
+
+void updateUsbIdentityByMode(uint8_t modeIdx)
+{
+  uint8_t profileIdx = getUsbProfileIndexByMode(modeIdx);
+  activeUsbVid = usbIdentityProfiles[profileIdx].vid;
+  activeUsbPid = usbIdentityProfiles[profileIdx].pid;
+  activeUsbManufacturer = usbIdentityProfiles[profileIdx].manufacturer;
+  activeUsbProduct = usbIdentityProfiles[profileIdx].product;
+}
 
 void save_setting()
 {
@@ -196,6 +219,9 @@ void drawDisplay()
   case INPUT_MODE_NEMESIS:
     oled.drawBitmap(55, 0, icon_nemesis, 16, 14, SSD1306_WHITE);
     break;
+  case INPUT_MODE_PLAYSTATION:
+    oled.drawBitmap(55, 0, icon_playstation, 16, 14, SSD1306_WHITE);
+    break;
   }
   oled.display();
 }
@@ -220,6 +246,7 @@ bool isKeyEnabled()
 void setup()
 {
   load_setting();
+  updateUsbIdentityByMode(mode);
 
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -251,6 +278,9 @@ void setup()
   usb_hid_key.setPollInterval(1);
 
   TinyUSB_Device_Init(0);
+  TinyUSBDevice.setID(activeUsbVid, activeUsbPid);
+  TinyUSBDevice.setManufacturerDescriptor(activeUsbManufacturer);
+  TinyUSBDevice.setProductDescriptor(activeUsbProduct);
 
   switch (keyAssign[mode].device)
   {
@@ -342,15 +372,17 @@ void loop()
   if (stsMode && !lastMode && isKeyEnabled())
   {
     uint8_t lastDevice = keyAssign[mode].device;
+    uint8_t lastUsbProfile = getUsbProfileIndexByMode(mode);
     mode++;
     if (mode >= sizeof(keyAssign) / sizeof(KeyAssign))
     {
       mode = 0;
     }
+    uint8_t currentUsbProfile = getUsbProfileIndexByMode(mode);
     lastMode = stsMode;
     save_setting();
     drawDisplay();
-    if (lastDevice != keyAssign[mode].device)
+    if ((lastDevice != keyAssign[mode].device) || (lastUsbProfile != currentUsbProfile))
     {
       TinyUSBDevice.detach();
       oled.clearDisplay();
@@ -504,8 +536,23 @@ void loop()
   memset(&pad_report, 0, sizeof(pad_report));
   pad_report.x = (stsPadOut[OUT_PAD_LEFT] ? 0 : 127) + (stsPadOut[OUT_PAD_RIGHT] ? 127 : 0);
   pad_report.y = (stsPadOut[OUT_PAD_UP] ? 0 : 127) + (stsPadOut[OUT_PAD_DOWN] ? 127 : 0);
-  pad_report.buttons[0] = stsPadOut[OUT_PAD_TRG_C] | stsPadOut[OUT_PAD_TRG_B] << 1 | stsPadOut[OUT_PAD_TRG_A] << 2 | stsPadOut[OUT_PAD_04] << 3 | stsPadOut[OUT_PAD_L1] << 4 | stsPadOut[OUT_PAD_R1] << 5 | stsPadOut[OUT_PAD_07] << 6 | stsPadOut[OUT_PAD_08] << 7;
-  pad_report.buttons[1] = stsPadOut[OUT_PAD_SELECT] | stsPadOut[OUT_PAD_START] << 1 | stsPadOut[OUT_PAD_11] << 2 | stsPadOut[OUT_PAD_12] << 3;
+  uint16_t padButtons = 0;
+  padButtons |= (stsPadOut[OUT_PAD_CROSS] ? 1u : 0u) << 0;
+  padButtons |= (stsPadOut[OUT_PAD_CIRCLE] ? 1u : 0u) << 1;
+  padButtons |= (stsPadOut[OUT_PAD_SQUARE] ? 1u : 0u) << 2;
+  padButtons |= (stsPadOut[OUT_PAD_TRIANGLE] ? 1u : 0u) << 3;
+  padButtons |= (stsPadOut[OUT_PAD_L1] ? 1u : 0u) << 4;
+  padButtons |= (stsPadOut[OUT_PAD_R1] ? 1u : 0u) << 5;
+  padButtons |= (stsPadOut[OUT_PAD_L2] ? 1u : 0u) << 6;
+  padButtons |= (stsPadOut[OUT_PAD_R2] ? 1u : 0u) << 7;
+  padButtons |= (stsPadOut[OUT_PAD_SHARE] ? 1u : 0u) << 8;
+  padButtons |= (stsPadOut[OUT_PAD_OPTIONS] ? 1u : 0u) << 9;
+  padButtons |= (stsPadOut[OUT_PAD_L3] ? 1u : 0u) << 10;
+  padButtons |= (stsPadOut[OUT_PAD_R3] ? 1u : 0u) << 11;
+  padButtons |= (stsPadOut[OUT_PAD_PS] ? 1u : 0u) << 12;
+
+  pad_report.buttons[0] = (uint8_t)(padButtons & 0xFFu);
+  pad_report.buttons[1] = (uint8_t)((padButtons >> 8) & 0xFFu);
   key_report.modifier = 0;
   key_report.usage[0] = HID_KEY_A;
 

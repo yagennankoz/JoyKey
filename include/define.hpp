@@ -34,33 +34,63 @@
 
 #define FLASH_TARGET_OFFSET 0x1F0000
 
-#define JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD(...)                                                             \
-  HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                                                   \
-      HID_USAGE(HID_USAGE_DESKTOP_JOYSTICK),                                                                \
-      HID_COLLECTION(HID_COLLECTION_APPLICATION), /* Report ID if any */                                    \
-      __VA_ARGS__                                 /* Button Map */                                          \
-          HID_LOGICAL_MIN(0x00),                                                                            \
-      HID_LOGICAL_MAX(0x01),                                                                                \
-      HID_PHYSICAL_MIN(0),                                                                                  \
-      HID_PHYSICAL_MAX(1),                                                                                  \
-      HID_REPORT_SIZE(1),                                                                                   \
-      HID_REPORT_COUNT(12),                                                                                 \
-      HID_USAGE_PAGE(HID_USAGE_PAGE_BUTTON),                                                                \
-      HID_USAGE_MIN(1),                                                                                     \
-      HID_USAGE_MAX(12),                                                                                    \
-      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                                                    \
-      HID_REPORT_COUNT(4),                                                                                  \
-      HID_INPUT(HID_CONSTANT | HID_ARRAY | HID_ABSOLUTE), /* 8 bit X, Y, Z, Rz, Rx, Ry (min 0, max 255 ) */ \
-      HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                                               \
-      HID_USAGE(HID_USAGE_DESKTOP_X),                                                                       \
-      HID_USAGE(HID_USAGE_DESKTOP_Y),                                                                       \
-      HID_PHYSICAL_MIN(0x00),                                                                               \
-      HID_PHYSICAL_MAX_N(0xff, 2),                                                                          \
-      HID_LOGICAL_MIN(0x00),                                                                                \
-      HID_LOGICAL_MAX_N(0xff, 2),                                                                           \
-      HID_REPORT_SIZE(8),                                                                                   \
-      HID_REPORT_COUNT(2),                                                                                  \
-      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                                                    \
+typedef struct
+{
+  uint16_t vid;
+  uint16_t pid;
+  const char *manufacturer;
+  const char *product;
+} UsbIdentityProfile;
+
+// USB VID/PID profile IDs used by keyAssign[].usbProfile.
+enum
+{
+  USB_ID_PROFILE_PICO = 0,
+  USB_ID_PROFILE_Z,
+  USB_ID_PROFILE_8bitDo_SN30Pro,
+  USB_ID_PROFILE_DUAL_SHOCK_3,
+  USB_ID_PROFILE_HORI_FIGHTING_STICK_V3,
+  USB_ID_PROFILE_HORI_SOULCALIBUR_V,
+  USB_ID_PROFILE_RETROBIT_GENESIS_6B,
+  USB_ID_PROFILE_MAX
+};
+
+// USB identity table indexed by USB_ID_PROFILE_*.
+const UsbIdentityProfile usbIdentityProfiles[USB_ID_PROFILE_MAX] = {
+    {0x2E8A, 0x0003, "Raspberry Pi", "Pico"},                 // USB_ID_PROFILE_PICO
+    {0x33DD, 0x0013, "Shining", "X68000 Z JOYPAD"},           // USB_ID_PROFILE_Z
+    {0x2DC8, 0x6001, "8BitDo", "8BitDo SN30 Pro"},            // USB_ID_PROFILE_8bitDo_SN30Pro
+    {0x054C, 0x0268, "Sony", "PLAYSTATION(R)3 Controller"},   // USB_ID_PROFILE_DUAL_SHOCK_3
+    {0x054C, 0x0CE6, "HORI CO.,LTD.", "FIGHTING STICK V3"},   // USB_ID_PROFILE_HORI_FIGHTING_STICK_V3
+    {0x24C6, 0x5506, "HORI CO.,LTD.", "SOULCALIBUR V Stick"}, // USB_ID_PROFILE_HORI_SOULCALIBUR_V
+    {0x0CA3, 0x0026, "Retro-Bit", "SEGA Genesis Controller"}  // USB_ID_PROFILE_RETROBIT_GENESIS_6B
+};
+
+#define JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD(...)                                                            \
+  HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                                                  \
+      HID_USAGE(HID_USAGE_DESKTOP_JOYSTICK),                                                               \
+      HID_COLLECTION(HID_COLLECTION_APPLICATION), /* Report ID if any */                                   \
+      __VA_ARGS__                                 /* Button Map */                                         \
+          HID_LOGICAL_MIN(0x00),                                                                           \
+      HID_LOGICAL_MAX(0x01),                                                                               \
+      HID_PHYSICAL_MIN(0),                                                                                 \
+      HID_PHYSICAL_MAX(1),                                                                                 \
+      HID_REPORT_SIZE(1),                                                                                  \
+      HID_REPORT_COUNT(16),                                                                                \
+      HID_USAGE_PAGE(HID_USAGE_PAGE_BUTTON),                                                               \
+      HID_USAGE_MIN(1),                                                                                    \
+      HID_USAGE_MAX(16),                                                                                   \
+      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE), /* 8 bit X, Y, Z, Rz, Rx, Ry (min 0, max 255 ) */ \
+      HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                                              \
+      HID_USAGE(HID_USAGE_DESKTOP_X),                                                                      \
+      HID_USAGE(HID_USAGE_DESKTOP_Y),                                                                      \
+      HID_PHYSICAL_MIN(0x00),                                                                              \
+      HID_PHYSICAL_MAX_N(0xff, 2),                                                                         \
+      HID_LOGICAL_MIN(0x00),                                                                               \
+      HID_LOGICAL_MAX_N(0xff, 2),                                                                          \
+      HID_REPORT_SIZE(8),                                                                                  \
+      HID_REPORT_COUNT(2),                                                                                 \
+      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                                                   \
       HID_COLLECTION_END
 
 typedef struct
