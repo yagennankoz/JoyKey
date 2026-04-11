@@ -16,11 +16,20 @@
 #include "keyIcon.hpp"
 
 Adafruit_SSD1306 oled(128, 64, &Wire, -1);
+uint8_t const desc_hid_report_composite_z[] = {
+    JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD_Z(HID_REPORT_ID(RID_JOYPAD)),
+    TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(RID_KEYBOARD))};
 uint8_t const desc_hid_report_composite[] = {
     JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD(HID_REPORT_ID(RID_JOYPAD)),
     TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(RID_KEYBOARD))};
+uint8_t const desc_hid_report_joypad_z[] = {
+    JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD_Z(HID_REPORT_ID(RID_JOYPAD))};
 uint8_t const desc_hid_report_joypad[] = {
     JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD(HID_REPORT_ID(RID_JOYPAD))};
+uint8_t const desc_hid_report_joypad_noid_z[] = {
+    JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD_Z()};
+uint8_t const desc_hid_report_joypad_noid[] = {
+    JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD()};
 uint8_t const desc_hid_report_key[] = {
     TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(RID_KEYBOARD))};
 Adafruit_USBD_HID usb_hid_pad;
@@ -68,6 +77,7 @@ bool lastKeyOut[HID_KEY_GUI_RIGHT + 1] = {false};
 uint8_t keyUsage[6] = {HID_KEY_NONE};
 uint8_t lastKeyUsage[6] = {HID_KEY_NONE};
 Joykey_hid_gamepad_report_t lastSentPadReport = {};
+Joykey_hid_gamepad_z_report_t lastSentPadReportZ = {};
 uint8_t lastSentKeyModifier = MODIFIER_NONE;
 uint8_t lastSentKeyUsage[6] = {HID_KEY_NONE};
 bool keyOn = false;
@@ -77,6 +87,35 @@ uint16_t activeUsbVid = usbIdentityProfiles[USB_ID_PROFILE_PICO].vid;
 uint16_t activeUsbPid = usbIdentityProfiles[USB_ID_PROFILE_PICO].pid;
 const char *activeUsbManufacturer = usbIdentityProfiles[USB_ID_PROFILE_PICO].manufacturer;
 const char *activeUsbProduct = usbIdentityProfiles[USB_ID_PROFILE_PICO].product;
+
+static uint8_t const horiFeatureReport[8] = {0x21, 0x26, 0x02, 0x04, 0x00, 0x00, 0x00, 0x00};
+static uint8_t lastHoriOutputReport[8] = {0};
+static constexpr uint8_t PAD_REPORT_LEN_Z = (uint8_t)sizeof(Joykey_hid_gamepad_z_report_t);
+
+uint16_t hidPadGetReportCallback(uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen)
+{
+  (void)report_id;
+
+  if (report_type == HID_REPORT_TYPE_FEATURE)
+  {
+    uint16_t len = (reqlen < sizeof(horiFeatureReport)) ? reqlen : (uint16_t)sizeof(horiFeatureReport);
+    memcpy(buffer, horiFeatureReport, len);
+    return len;
+  }
+
+  return 0;
+}
+
+void hidPadSetReportCallback(uint8_t report_id, hid_report_type_t report_type, uint8_t const *buffer, uint16_t bufsize)
+{
+  (void)report_id;
+
+  if ((report_type == HID_REPORT_TYPE_OUTPUT || report_type == HID_REPORT_TYPE_FEATURE) && bufsize)
+  {
+    uint16_t len = (bufsize < sizeof(lastHoriOutputReport)) ? bufsize : (uint16_t)sizeof(lastHoriOutputReport);
+    memcpy(lastHoriOutputReport, buffer, len);
+  }
+}
 
 uint8_t getUsbProfileIndexByMode(uint8_t modeIdx)
 {
@@ -276,16 +315,25 @@ void setup()
 
   usb_hid_pad.setPollInterval(1);
   usb_hid_key.setPollInterval(1);
+  usb_hid_pad.setReportCallback(hidPadGetReportCallback, hidPadSetReportCallback);
 
   TinyUSB_Device_Init(0);
   TinyUSBDevice.setID(activeUsbVid, activeUsbPid);
   TinyUSBDevice.setManufacturerDescriptor(activeUsbManufacturer);
   TinyUSBDevice.setProductDescriptor(activeUsbProduct);
 
+  bool useZPadDescriptor = (getUsbProfileIndexByMode(mode) == USB_ID_PROFILE_Z);
+  uint8_t const *padDescWithId = useZPadDescriptor ? desc_hid_report_joypad_z : desc_hid_report_joypad;
+  uint16_t padDescWithIdLen = useZPadDescriptor ? sizeof(desc_hid_report_joypad_z) : sizeof(desc_hid_report_joypad);
+  uint8_t const *padDescNoId = useZPadDescriptor ? desc_hid_report_joypad_noid_z : desc_hid_report_joypad_noid;
+  uint16_t padDescNoIdLen = useZPadDescriptor ? sizeof(desc_hid_report_joypad_noid_z) : sizeof(desc_hid_report_joypad_noid);
+  uint8_t const *compositeDesc = useZPadDescriptor ? desc_hid_report_composite_z : desc_hid_report_composite;
+  uint16_t compositeDescLen = useZPadDescriptor ? sizeof(desc_hid_report_composite_z) : sizeof(desc_hid_report_composite);
+
   switch (keyAssign[mode].device)
   {
   case USB_DVC_PAD:
-    usb_hid_pad.setReportDescriptor(desc_hid_report_joypad, sizeof(desc_hid_report_joypad));
+    usb_hid_pad.setReportDescriptor(padDescNoId, padDescNoIdLen);
     usb_hid_pad.begin();
     break;
   case USB_DVC_KEY:
@@ -294,7 +342,7 @@ void setup()
     usb_hid_key.begin();
     break;
   default:
-    usb_hid_pad.setReportDescriptor(desc_hid_report_joypad, sizeof(desc_hid_report_joypad));
+    usb_hid_pad.setReportDescriptor(compositeDesc, compositeDescLen);
     usb_hid_key.setBootProtocol(HID_ITF_PROTOCOL_KEYBOARD);
     usb_hid_key.setReportDescriptor(desc_hid_report_key, sizeof(desc_hid_report_key));
     usb_hid_pad.begin();
@@ -534,12 +582,48 @@ void loop()
   }
 
   memset(&pad_report, 0, sizeof(pad_report));
-  pad_report.x = (stsPadOut[OUT_PAD_LEFT] ? 0 : 127) + (stsPadOut[OUT_PAD_RIGHT] ? 127 : 0);
-  pad_report.y = (stsPadOut[OUT_PAD_UP] ? 0 : 127) + (stsPadOut[OUT_PAD_DOWN] ? 127 : 0);
+  bool padUp = stsPadOut[OUT_PAD_UP];
+  bool padDown = stsPadOut[OUT_PAD_DOWN];
+  bool padLeft = stsPadOut[OUT_PAD_LEFT];
+  bool padRight = stsPadOut[OUT_PAD_RIGHT];
+
+  pad_report.hat = 8;
+  if (padUp && !padDown)
+  {
+    if (padRight && !padLeft)
+      pad_report.hat = 1;
+    else if (padLeft && !padRight)
+      pad_report.hat = 7;
+    else
+      pad_report.hat = 0;
+  }
+  else if (padDown && !padUp)
+  {
+    if (padRight && !padLeft)
+      pad_report.hat = 3;
+    else if (padLeft && !padRight)
+      pad_report.hat = 5;
+    else
+      pad_report.hat = 4;
+  }
+  else if (padRight && !padLeft)
+  {
+    pad_report.hat = 2;
+  }
+  else if (padLeft && !padRight)
+  {
+    pad_report.hat = 6;
+  }
+
+  pad_report.x = 127;
+  pad_report.y = 127;
+  pad_report.z = 127;
+  pad_report.rz = 127;
+
   uint16_t padButtons = 0;
-  padButtons |= (stsPadOut[OUT_PAD_CROSS] ? 1u : 0u) << 0;
-  padButtons |= (stsPadOut[OUT_PAD_CIRCLE] ? 1u : 0u) << 1;
-  padButtons |= (stsPadOut[OUT_PAD_SQUARE] ? 1u : 0u) << 2;
+  padButtons |= (stsPadOut[OUT_PAD_SQUARE] ? 1u : 0u) << 0;
+  padButtons |= (stsPadOut[OUT_PAD_CROSS] ? 1u : 0u) << 1;
+  padButtons |= (stsPadOut[OUT_PAD_CIRCLE] ? 1u : 0u) << 2;
   padButtons |= (stsPadOut[OUT_PAD_TRIANGLE] ? 1u : 0u) << 3;
   padButtons |= (stsPadOut[OUT_PAD_L1] ? 1u : 0u) << 4;
   padButtons |= (stsPadOut[OUT_PAD_R1] ? 1u : 0u) << 5;
@@ -569,10 +653,31 @@ void loop()
     }
     if (keyAssign[mode].device == USB_DVC_COMPOSITE || keyAssign[mode].device == USB_DVC_PAD)
     {
-      if (memcmp(&lastSentPadReport, &pad_report, sizeof(pad_report)) != 0 && usb_hid_pad.ready())
+      bool useZPadDescriptor = (getUsbProfileIndexByMode(mode) == USB_ID_PROFILE_Z);
+      if (useZPadDescriptor)
       {
-        usb_hid_pad.sendReport(RID_JOYPAD, &pad_report, sizeof(pad_report));
-        memcpy(&lastSentPadReport, &pad_report, sizeof(lastSentPadReport));
+        Joykey_hid_gamepad_z_report_t pad_report_z = {};
+        uint16_t zButtons = (uint16_t)(padButtons & 0x0FFFu);
+        pad_report_z.buttons[0] = (uint8_t)(zButtons & 0xFFu);
+        pad_report_z.buttons[1] = (uint8_t)((zButtons >> 8) & 0x0Fu);
+        pad_report_z.x = (padLeft ? 0 : 127) + (padRight ? 127 : 0);
+        pad_report_z.y = (padUp ? 0 : 127) + (padDown ? 127 : 0);
+
+        if (memcmp(&lastSentPadReportZ, &pad_report_z, PAD_REPORT_LEN_Z) != 0 && usb_hid_pad.ready())
+        {
+          uint8_t padReportId = (keyAssign[mode].device == USB_DVC_PAD) ? 0 : RID_JOYPAD;
+          usb_hid_pad.sendReport(padReportId, &pad_report_z, PAD_REPORT_LEN_Z);
+          memcpy(&lastSentPadReportZ, &pad_report_z, PAD_REPORT_LEN_Z);
+        }
+      }
+      else
+      {
+        if (memcmp(&lastSentPadReport, &pad_report, sizeof(pad_report)) != 0 && usb_hid_pad.ready())
+        {
+          uint8_t padReportId = (keyAssign[mode].device == USB_DVC_PAD) ? 0 : RID_JOYPAD;
+          usb_hid_pad.sendReport(padReportId, &pad_report, sizeof(pad_report));
+          memcpy(&lastSentPadReport, &pad_report, sizeof(lastSentPadReport));
+        }
       }
     }
   }

@@ -47,59 +47,134 @@ enum
 {
   USB_ID_PROFILE_PICO = 0,
   USB_ID_PROFILE_Z,
-  USB_ID_PROFILE_8bitDo_SN30Pro,
-  USB_ID_PROFILE_DUAL_SHOCK_3,
   USB_ID_PROFILE_HORI_FIGHTING_STICK_V3,
-  USB_ID_PROFILE_HORI_SOULCALIBUR_V,
-  USB_ID_PROFILE_RETROBIT_GENESIS_6B,
   USB_ID_PROFILE_MAX
 };
 
 // USB identity table indexed by USB_ID_PROFILE_*.
 const UsbIdentityProfile usbIdentityProfiles[USB_ID_PROFILE_MAX] = {
-    {0x2E8A, 0x0003, "Raspberry Pi", "Pico"},                 // USB_ID_PROFILE_PICO
-    {0x33DD, 0x0013, "Shining", "X68000 Z JOYPAD"},           // USB_ID_PROFILE_Z
-    {0x2DC8, 0x6001, "8BitDo", "8BitDo SN30 Pro"},            // USB_ID_PROFILE_8bitDo_SN30Pro
-    {0x054C, 0x0268, "Sony", "PLAYSTATION(R)3 Controller"},   // USB_ID_PROFILE_DUAL_SHOCK_3
-    {0x054C, 0x0CE6, "HORI CO.,LTD.", "FIGHTING STICK V3"},   // USB_ID_PROFILE_HORI_FIGHTING_STICK_V3
-    {0x24C6, 0x5506, "HORI CO.,LTD.", "SOULCALIBUR V Stick"}, // USB_ID_PROFILE_HORI_SOULCALIBUR_V
-    {0x0CA3, 0x0026, "Retro-Bit", "SEGA Genesis Controller"}  // USB_ID_PROFILE_RETROBIT_GENESIS_6B
+    {0x2E8A, 0x0003, "Raspberry Pi", "Pico"},               // USB_ID_PROFILE_PICO
+    {0x33DD, 0x0013, "Shining", "X68000 Z JOYPAD"},         // USB_ID_PROFILE_Z
+    {0x0F0D, 0x0027, "HORI CO.,LTD.", "FIGHTING STICK V3"}, // USB_ID_PROFILE_HORI_FIGHTING_STICK_V3
 };
 
-#define JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD(...)                                                            \
-  HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                                                  \
-      HID_USAGE(HID_USAGE_DESKTOP_JOYSTICK),                                                               \
-      HID_COLLECTION(HID_COLLECTION_APPLICATION), /* Report ID if any */                                   \
-      __VA_ARGS__                                 /* Button Map */                                         \
-          HID_LOGICAL_MIN(0x00),                                                                           \
-      HID_LOGICAL_MAX(0x01),                                                                               \
-      HID_PHYSICAL_MIN(0),                                                                                 \
-      HID_PHYSICAL_MAX(1),                                                                                 \
-      HID_REPORT_SIZE(1),                                                                                  \
-      HID_REPORT_COUNT(16),                                                                                \
-      HID_USAGE_PAGE(HID_USAGE_PAGE_BUTTON),                                                               \
-      HID_USAGE_MIN(1),                                                                                    \
-      HID_USAGE_MAX(16),                                                                                   \
-      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE), /* 8 bit X, Y, Z, Rz, Rx, Ry (min 0, max 255 ) */ \
-      HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                                              \
-      HID_USAGE(HID_USAGE_DESKTOP_X),                                                                      \
-      HID_USAGE(HID_USAGE_DESKTOP_Y),                                                                      \
-      HID_PHYSICAL_MIN(0x00),                                                                              \
-      HID_PHYSICAL_MAX_N(0xff, 2),                                                                         \
-      HID_LOGICAL_MIN(0x00),                                                                               \
-      HID_LOGICAL_MAX_N(0xff, 2),                                                                          \
-      HID_REPORT_SIZE(8),                                                                                  \
-      HID_REPORT_COUNT(2),                                                                                 \
-      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                                                   \
+#define JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD(...)                           \
+  HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                 \
+      HID_USAGE(HID_USAGE_DESKTOP_GAMEPAD),                               \
+      HID_COLLECTION(HID_COLLECTION_APPLICATION), /* Report ID if any */  \
+      __VA_ARGS__                                                         \
+          HID_LOGICAL_MIN(0),                                             \
+      HID_LOGICAL_MAX(1),                                                 \
+      HID_PHYSICAL_MIN(0),                                                \
+      HID_PHYSICAL_MAX(1),                                                \
+      HID_REPORT_SIZE(1),                                                 \
+      HID_REPORT_COUNT(13),                                               \
+      HID_USAGE_PAGE(HID_USAGE_PAGE_BUTTON),                              \
+      HID_USAGE_MIN(1),                                                   \
+      HID_USAGE_MAX(13),                                                  \
+      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                  \
+      HID_REPORT_COUNT(3),                                                \
+      HID_INPUT(HID_CONSTANT | HID_ARRAY | HID_ABSOLUTE),                 \
+      HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                             \
+      HID_LOGICAL_MAX(7),                                                 \
+      HID_PHYSICAL_MAX_N(315, 2),                                         \
+      HID_REPORT_SIZE(4),                                                 \
+      HID_REPORT_COUNT(1),                                                \
+      HID_UNIT(0x14),                                                     \
+      HID_USAGE(HID_USAGE_DESKTOP_HAT_SWITCH),                            \
+      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE | HID_NULL_STATE), \
+      HID_UNIT(0),                                                        \
+      HID_REPORT_COUNT(1),                                                \
+      HID_INPUT(HID_CONSTANT | HID_ARRAY | HID_ABSOLUTE),                 \
+      HID_LOGICAL_MAX_N(0xff, 2),                                         \
+      HID_PHYSICAL_MAX_N(0xff, 2),                                        \
+      HID_USAGE(HID_USAGE_DESKTOP_X),                                     \
+      HID_USAGE(HID_USAGE_DESKTOP_Y),                                     \
+      HID_USAGE(HID_USAGE_DESKTOP_Z),                                     \
+      HID_USAGE(HID_USAGE_DESKTOP_RZ),                                    \
+      HID_REPORT_SIZE(8),                                                 \
+      HID_REPORT_COUNT(4),                                                \
+      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                  \
+      HID_USAGE_PAGE_N(0xFF00, 2),                                        \
+      HID_USAGE(0x20),                                                    \
+      HID_USAGE(0x21),                                                    \
+      HID_USAGE(0x22),                                                    \
+      HID_USAGE(0x23),                                                    \
+      HID_USAGE(0x24),                                                    \
+      HID_USAGE(0x25),                                                    \
+      HID_USAGE(0x26),                                                    \
+      HID_USAGE(0x27),                                                    \
+      HID_USAGE(0x28),                                                    \
+      HID_USAGE(0x29),                                                    \
+      HID_USAGE(0x2A),                                                    \
+      HID_USAGE(0x2B),                                                    \
+      HID_REPORT_COUNT(12),                                               \
+      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                  \
+      HID_USAGE_N(0x2126, 2),                                             \
+      HID_REPORT_COUNT(8),                                                \
+      HID_FEATURE(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                \
+      HID_USAGE_N(0x2126, 2),                                             \
+      HID_OUTPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                 \
+      HID_LOGICAL_MAX_N(1023, 2),                                         \
+      HID_PHYSICAL_MAX_N(1023, 2),                                        \
+      HID_USAGE(0x2C),                                                    \
+      HID_USAGE(0x2D),                                                    \
+      HID_USAGE(0x2E),                                                    \
+      HID_USAGE(0x2F),                                                    \
+      HID_REPORT_SIZE(16),                                                \
+      HID_REPORT_COUNT(4),                                                \
+      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                  \
+      HID_COLLECTION_END
+
+#define JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD_Z(...)                        \
+  HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                \
+      HID_USAGE(HID_USAGE_DESKTOP_JOYSTICK),                             \
+      HID_COLLECTION(HID_COLLECTION_APPLICATION), /* Report ID if any */ \
+      __VA_ARGS__                                                        \
+          HID_LOGICAL_MIN(0),                                            \
+      HID_LOGICAL_MAX(1),                                                \
+      HID_PHYSICAL_MIN(0),                                               \
+      HID_PHYSICAL_MAX(1),                                               \
+      HID_REPORT_SIZE(1),                                                \
+      HID_REPORT_COUNT(12),                                              \
+      HID_USAGE_PAGE(HID_USAGE_PAGE_BUTTON),                             \
+      HID_USAGE_MIN(1),                                                  \
+      HID_USAGE_MAX(12),                                                 \
+      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                 \
+      HID_REPORT_COUNT(4),                                               \
+      HID_INPUT(HID_CONSTANT | HID_ARRAY | HID_ABSOLUTE),                \
+      HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                            \
+      HID_LOGICAL_MAX_N(0xff, 2),                                        \
+      HID_PHYSICAL_MAX_N(0xff, 2),                                       \
+      HID_USAGE(HID_USAGE_DESKTOP_X),                                    \
+      HID_USAGE(HID_USAGE_DESKTOP_Y),                                    \
+      HID_REPORT_SIZE(8),                                                \
+      HID_REPORT_COUNT(2),                                               \
+      HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                 \
       HID_COLLECTION_END
 
 typedef struct
 {
-  uint8_t buttons[2]; ///< Buttons mask for currently pressed buttons
-  uint8_t x;          ///< Delta x  movement of left analog-stick
-  uint8_t y;          ///< Delta y  movement of left analog-stick
-  //  uint8_t   dpad;
+  uint8_t buttons[2]; ///< Button bits [0..11] + 4-bit padding
+  uint8_t x;          ///< Analog X
+  uint8_t y;          ///< Analog Y
+} Joykey_hid_gamepad_z_report_t;
+
+static_assert(sizeof(Joykey_hid_gamepad_z_report_t) == 4, "Z joypad report size must be 4 bytes");
+
+typedef struct
+{
+  uint8_t buttons[2];   ///< Button bits [0..12] + 3-bit padding
+  uint8_t hat;          ///< Low nibble: hat (1-8, 0 neutral), high nibble: padding
+  uint8_t x;            ///< Analog X
+  uint8_t y;            ///< Analog Y
+  uint8_t z;            ///< Analog Z
+  uint8_t rz;           ///< Analog Rz
+  uint8_t vendorIn[12]; ///< Vendor input bytes (Usage 0x20..0x2B)
+  uint8_t vendor16[8];  ///< Vendor 4x16-bit input bytes (Usage 0x2C..0x2F)
 } Joykey_hid_gamepad_report_t;
+
+static_assert(sizeof(Joykey_hid_gamepad_report_t) == 27, "Joypad report size must be 27 bytes");
 
 typedef struct
 {
