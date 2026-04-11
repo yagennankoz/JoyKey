@@ -30,6 +30,8 @@ typedef enum
   KEY_ICON_CIRCLE,
   KEY_ICON_CROSS,
   KEY_ICON_SQUARE,
+  KEY_ICON_A,
+  KEY_ICON_B
 } KeyIconCode;
 
 uint8_t keyIconDef[][KEY_ICON_SIZE] = {
@@ -240,4 +242,22 @@ uint8_t keyIconDef[][KEY_ICON_SIZE] = {
     0b11000011,
     0b11111111,
     0b11111111,
+    // KEY_ICON_A
+    0b01111000,
+    0b01111110,
+    0b00000011,
+    0b00111111,
+    0b11100111,
+    0b11000011,
+    0b11111111,
+    0b01111011,
+    // KEY_ICON_B
+    0b11000000,
+    0b11000000,
+    0b11011100,
+    0b11111110,
+    0b11100011,
+    0b11000011,
+    0b11111111,
+    0b11111110,
 };
