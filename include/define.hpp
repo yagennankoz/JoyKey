@@ -54,7 +54,7 @@ enum
 // USB identity table indexed by USB_ID_PROFILE_*.
 const UsbIdentityProfile usbIdentityProfiles[USB_ID_PROFILE_MAX] = {
     {0x2E8A, 0x0003, "Raspberry Pi", "Pico"},               // USB_ID_PROFILE_PICO
-    {0x33DD, 0x0013, "Shining", "X68000 Z JOYPAD"},         // USB_ID_PROFILE_Z
+    {0x33DD, 0x0013, "ZUIKI", "X68000 Z JOYCARD(BLACK)"},   // USB_ID_PROFILE_Z
     {0x0F0D, 0x0027, "HORI CO.,LTD.", "FIGHTING STICK V3"}, // USB_ID_PROFILE_HORI_FIGHTING_STICK_V3
 };
 
@@ -128,7 +128,7 @@ const UsbIdentityProfile usbIdentityProfiles[USB_ID_PROFILE_MAX] = {
 
 #define JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD_Z(...)                        \
   HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                \
-      HID_USAGE(HID_USAGE_DESKTOP_JOYSTICK),                             \
+      HID_USAGE(HID_USAGE_DESKTOP_GAMEPAD),                              \
       HID_COLLECTION(HID_COLLECTION_APPLICATION), /* Report ID if any */ \
       __VA_ARGS__                                                        \
           HID_LOGICAL_MIN(0),                                            \
