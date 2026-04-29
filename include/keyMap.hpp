@@ -6,17 +6,6 @@
 #define KEY_ASSIGN_NUM (14u)
 #define KEY_ASSIGN_KEY_NUM (6u)
 
-enum
-{
-  INPUT_MODE_Z = 0,
-  INPUT_MODE_W,
-  INPUT_MODE_ROGUE,
-  INPUT_MODE_GRADIUS,
-  INPUT_MODE_LAGOON,
-  INPUT_MODE_NEMESIS,
-  INPUT_MODE_PLAYSTATION,
-};
-
 // キー出力デバイス種別
 typedef enum
 {
@@ -36,27 +25,27 @@ typedef enum
 typedef enum
 {
   K_NOP = 0,
-  K_PD_UP,        // D-PAD UP
-  K_PD_DOWN,      // D-PAD DOWN
-  K_PD_LEFT,      // D-PAD LEFT
-  K_PD_RIGHT,     // D-PAD RIGHT
-  K_PD_CROSS,     // PS: CROSS
-  K_PD_CIRCLE,    // PS: CIRCLE
-  K_PD_SQUARE,    // PS: SQUARE
-  K_PD_TRIANGLE,  // PS: TRIANGLE
-  K_PD_L1,        // PS: L1
-  K_PD_R1,        // PS: R1
-  K_PD_L2,        // PS: L2
-  K_PD_R2,        // PS: R2
-  K_PD_SHARE,     // PS: SHARE
-  K_PD_OPTIONS,   // PS: OPTIONS
-  K_PD_L3,        // PS: L3
-  K_PD_R3,        // PS: R3
-  K_PD_PS,        // PS: HOME/PS
-  K_PD_CANCEL,    // Internal function: cancel
-  K_PD_BLAST,     // Internal function: blast
+  K_PD_UP,       // D-PAD UP
+  K_PD_DOWN,     // D-PAD DOWN
+  K_PD_LEFT,     // D-PAD LEFT
+  K_PD_RIGHT,    // D-PAD RIGHT
+  K_PD_CROSS,    // PS: CROSS
+  K_PD_CIRCLE,   // PS: CIRCLE
+  K_PD_SQUARE,   // PS: SQUARE
+  K_PD_TRIANGLE, // PS: TRIANGLE
+  K_PD_L1,       // PS: L1
+  K_PD_R1,       // PS: R1
+  K_PD_L2,       // PS: L2
+  K_PD_R2,       // PS: R2
+  K_PD_SHARE,    // PS: SHARE
+  K_PD_OPTIONS,  // PS: OPTIONS
+  K_PD_L3,       // PS: L3
+  K_PD_R3,       // PS: R3
+  K_PD_PS,       // PS: HOME/PS
+  K_PD_CANCEL,   // Internal function: cancel
+  K_PD_BLAST,    // Internal function: blast
 
-  K_KB_ESC,       // KB ESC
+  K_KB_ESC,        // KB ESC
   K_KB_1,          // KB 1
   K_KB_2,          // KB 2
   K_KB_3,          // KB 3
