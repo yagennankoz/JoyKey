@@ -246,9 +246,6 @@ void drawDisplay()
   case INPUT_MODE_Z:
     oled.drawBitmap(55, 1, icon_z, 16, 12, SSD1306_WHITE);
     break;
-  case INPUT_MODE_ROGUE:
-    oled.drawBitmap(55, 0, icon_rogue, 16, 14, SSD1306_WHITE);
-    break;
   case INPUT_MODE_GRADIUS:
     oled.drawBitmap(55, 0, icon_gradius, 16, 14, SSD1306_WHITE);
     break;
@@ -260,6 +257,15 @@ void drawDisplay()
     break;
   case INPUT_MODE_PLAYSTATION:
     oled.drawBitmap(55, 0, icon_playstation, 16, 14, SSD1306_WHITE);
+    break;
+  case INPUT_MODE_YS1:
+    oled.drawBitmap(55, 0, icon_YS1, 16, 14, SSD1306_WHITE);
+    break;
+  case INPUT_MODE_YS2:
+    oled.drawBitmap(55, 0, icon_YS2, 16, 14, SSD1306_WHITE);
+    break;
+  case INPUT_MODE_YS3:
+    oled.drawBitmap(55, 0, icon_YS3, 16, 14, SSD1306_WHITE);
     break;
   }
   oled.display();
@@ -489,31 +495,56 @@ void loop()
     fire |= (stsKeys[i] & rapidKeys[i] & rapidTrigger);
   }
   keyOn = false;
-  for (uint8_t i = 0; i < sizeof(lastKeyUsage); i++)
+  uint8_t keyUsageCount = 0;
+
+  for (uint8_t i = 0; i < sizeof(lastKeyUsage) && keyUsageCount < sizeof(keyUsage); i++)
   {
-    if (stsKeyOut[lastKeyUsage[i]])
+    uint8_t usage = lastKeyUsage[i];
+    if (usage == HID_KEY_NONE || !stsKeyOut[usage])
     {
-      keyUsage[i] = lastKeyUsage[i];
-      keyOn = true;
+      continue;
     }
-  }
-  stsKeyPos = 0;
-  for (uint8_t i = 0; i < sizeof(keyUsage); i++)
-  {
-    if (keyUsage[i] == HID_KEY_NONE)
+
+    bool alreadyAdded = false;
+    for (uint8_t j = 0; j < keyUsageCount; j++)
     {
-      for (uint16_t j = stsKeyPos; j < sizeof(stsKeyOut); j++)
+      if (keyUsage[j] == usage)
       {
-        stsKeyPos = j + 1;
-        if (stsKeyOut[j])
-        {
-          keyUsage[i] = j;
-          keyOn = true;
-          break;
-        }
+        alreadyAdded = true;
+        break;
       }
     }
+
+    if (!alreadyAdded)
+    {
+      keyUsage[keyUsageCount++] = usage;
+    }
   }
+
+  for (uint16_t usage = 1; usage < sizeof(stsKeyOut) && keyUsageCount < sizeof(keyUsage); usage++)
+  {
+    if (!stsKeyOut[usage])
+    {
+      continue;
+    }
+
+    bool alreadyAdded = false;
+    for (uint8_t j = 0; j < keyUsageCount; j++)
+    {
+      if (keyUsage[j] == usage)
+      {
+        alreadyAdded = true;
+        break;
+      }
+    }
+
+    if (!alreadyAdded)
+    {
+      keyUsage[keyUsageCount++] = (uint8_t)usage;
+    }
+  }
+
+  keyOn = (keyUsageCount > 0);
 
   // キャンセル判定
   if (stsPadOut[OUT_PAD_CANCEL] && !lastPadOut[OUT_PAD_CANCEL])
