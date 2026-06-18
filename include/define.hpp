@@ -46,19 +46,19 @@ typedef struct
 enum
 {
   USB_ID_PROFILE_PICO = 0,
-  USB_ID_PROFILE_Z,
-  USB_ID_PROFILE_HORI_FIGHTING_STICK_V3,
+  USB_ID_JOYCARD,
+  USB_ID_PROFILE_4FGC,
   USB_ID_PROFILE_MAX
 };
 
 // USB identity table indexed by USB_ID_PROFILE_*.
 const UsbIdentityProfile usbIdentityProfiles[USB_ID_PROFILE_MAX] = {
-    {0x2E8A, 0x0003, "Raspberry Pi", "Pico"},               // USB_ID_PROFILE_PICO
-    {0x33DD, 0x0013, "ZUIKI", "X68000 Z JOYCARD(BLACK)"},   // USB_ID_PROFILE_Z
-    {0x0F0D, 0x0027, "HORI CO.,LTD.", "FIGHTING STICK V3"}, // USB_ID_PROFILE_HORI_FIGHTING_STICK_V3
+    {0x2E8A, 0x0003, "Raspberry Pi", "Pico"}, // USB_ID_PROFILE_PICO
+    {0x33DD, 0x0013, "XXXXXX", "JOYCARD"},    // USB_ID_JOYCARD
+    {0x0F0D, 0x0027, "XXXXXX", "4FGC"},       // USB_ID_PROFILE_4FGC
 };
 
-#define JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD(...)                           \
+#define TUD_HID_REPORT_DESC_4FGC(...)                                     \
   HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                 \
       HID_USAGE(HID_USAGE_DESKTOP_GAMEPAD),                               \
       HID_COLLECTION(HID_COLLECTION_APPLICATION), /* Report ID if any */  \
@@ -126,7 +126,7 @@ const UsbIdentityProfile usbIdentityProfiles[USB_ID_PROFILE_MAX] = {
       HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),                  \
       HID_COLLECTION_END
 
-#define JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD_Z(...)                        \
+#define TUD_HID_REPORT_DESC_JOYCARD(...)                                 \
   HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                                \
       HID_USAGE(HID_USAGE_DESKTOP_GAMEPAD),                              \
       HID_COLLECTION(HID_COLLECTION_APPLICATION), /* Report ID if any */ \
