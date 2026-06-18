@@ -17,19 +17,19 @@
 
 Adafruit_SSD1306 oled(128, 64, &Wire, -1);
 uint8_t const desc_hid_report_composite_z[] = {
-    JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD_Z(HID_REPORT_ID(RID_JOYPAD)),
+    TUD_HID_REPORT_DESC_JOYCARD(HID_REPORT_ID(RID_JOYPAD)),
     TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(RID_KEYBOARD))};
 uint8_t const desc_hid_report_composite[] = {
-    JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD(HID_REPORT_ID(RID_JOYPAD)),
+    TUD_HID_REPORT_DESC_4FGC(HID_REPORT_ID(RID_JOYPAD)),
     TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(RID_KEYBOARD))};
 uint8_t const desc_hid_report_joypad_z[] = {
-    JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD_Z(HID_REPORT_ID(RID_JOYPAD))};
+    TUD_HID_REPORT_DESC_JOYCARD(HID_REPORT_ID(RID_JOYPAD))};
 uint8_t const desc_hid_report_joypad[] = {
-    JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD(HID_REPORT_ID(RID_JOYPAD))};
+    TUD_HID_REPORT_DESC_4FGC(HID_REPORT_ID(RID_JOYPAD))};
 uint8_t const desc_hid_report_joypad_noid_z[] = {
-    JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD_Z()};
+    TUD_HID_REPORT_DESC_JOYCARD()};
 uint8_t const desc_hid_report_joypad_noid[] = {
-    JOYKEY_TUD_HID_REPORT_DESC_GAMEPAD()};
+    TUD_HID_REPORT_DESC_4FGC()};
 uint8_t const desc_hid_report_key[] = {
     TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(RID_KEYBOARD))};
 Adafruit_USBD_HID usb_hid_pad;
@@ -328,7 +328,7 @@ void setup()
   TinyUSBDevice.setManufacturerDescriptor(activeUsbManufacturer);
   TinyUSBDevice.setProductDescriptor(activeUsbProduct);
 
-  bool useZPadDescriptor = (getUsbProfileIndexByMode(mode) == USB_ID_PROFILE_Z);
+  bool useZPadDescriptor = (getUsbProfileIndexByMode(mode) == USB_ID_JOYCARD);
   uint8_t const *padDescWithId = useZPadDescriptor ? desc_hid_report_joypad_z : desc_hid_report_joypad;
   uint16_t padDescWithIdLen = useZPadDescriptor ? sizeof(desc_hid_report_joypad_z) : sizeof(desc_hid_report_joypad);
   uint8_t const *padDescNoId = useZPadDescriptor ? desc_hid_report_joypad_noid_z : desc_hid_report_joypad_noid;
@@ -684,7 +684,7 @@ void loop()
     }
     if (keyAssign[mode].device == USB_DVC_COMPOSITE || keyAssign[mode].device == USB_DVC_PAD)
     {
-      bool useZPadDescriptor = (getUsbProfileIndexByMode(mode) == USB_ID_PROFILE_Z);
+      bool useZPadDescriptor = (getUsbProfileIndexByMode(mode) == USB_ID_JOYCARD);
       if (useZPadDescriptor)
       {
         Joykey_hid_gamepad_z_report_t pad_report_z = {};

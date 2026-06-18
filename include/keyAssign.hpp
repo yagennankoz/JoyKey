@@ -65,7 +65,7 @@ KeyAssign keyAssign[] = {
         // DEVICE
         USB_DVC_PAD,
         // USB PROFILE
-        USB_ID_PROFILE_HORI_FIGHTING_STICK_V3},
+        USB_ID_PROFILE_4FGC},
 
     // X68000 Z JOYCARD
     {
@@ -91,7 +91,7 @@ KeyAssign keyAssign[] = {
         // DEVICE
         USB_DVC_COMPOSITE,
         // USB PROFILE
-        USB_ID_PROFILE_Z},
+        USB_ID_JOYCARD},
 
     // GRADIUS
     {
@@ -117,7 +117,7 @@ KeyAssign keyAssign[] = {
         // DEVICE
         USB_DVC_COMPOSITE,
         // USB PROFILE
-        USB_ID_PROFILE_Z},
+        USB_ID_JOYCARD},
 
     // LAGOON
     {
@@ -143,7 +143,7 @@ KeyAssign keyAssign[] = {
         // DEVICE
         USB_DVC_COMPOSITE,
         // USB PROFILE
-        USB_ID_PROFILE_Z},
+        USB_ID_JOYCARD},
 
     // NEMESIS'90KAI
     {
@@ -169,7 +169,7 @@ KeyAssign keyAssign[] = {
         // DEVICE
         USB_DVC_COMPOSITE,
         // USB PROFILE
-        USB_ID_PROFILE_Z},
+        USB_ID_JOYCARD},
 
     // Ys I
     {
@@ -195,7 +195,7 @@ KeyAssign keyAssign[] = {
         // DEVICE
         USB_DVC_KEY,
         // USB PROFILE
-        USB_ID_PROFILE_Z},
+        USB_ID_JOYCARD},
 
     // Ys II
     {
@@ -221,7 +221,7 @@ KeyAssign keyAssign[] = {
         // DEVICE
         USB_DVC_KEY,
         // USB PROFILE
-        USB_ID_PROFILE_Z},
+        USB_ID_JOYCARD},
 
     // Ys III
     {
@@ -247,6 +247,6 @@ KeyAssign keyAssign[] = {
         // DEVICE
         USB_DVC_KEY,
         // USB PROFILE
-        USB_ID_PROFILE_Z},
+        USB_ID_JOYCARD},
 
 };
